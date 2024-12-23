@@ -1,10 +1,19 @@
 import 'package:flutter/material.dart';
+import '../models/department.dart';
 import '../models/student.dart';
 
 class StudentCard extends StatelessWidget {
   final StudentProfile profile;
 
   const StudentCard({super.key, required this.profile});
+
+  IconData _getDepartmentIcon(Department specialization) {
+    final department = departmentList.firstWhere(
+      (dept) => dept.id == specialization.id,
+      orElse: () => departmentList[0], 
+    );
+    return department.icon;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +55,7 @@ class StudentCard extends StatelessWidget {
             ),
             alignment: Alignment.center,
             child: Icon(
-              departmentIcons[profile.specialization],
+              _getDepartmentIcon(profile.specialization),
               size: 28,
               color: textColor,
             ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/student.dart';
+import '../models/department.dart';
 
 class NewStudentForm extends StatefulWidget {
   final Function(StudentProfile) onSave;
@@ -78,7 +79,9 @@ class _NewStudentFormState extends State<NewStudentForm> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  widget.studentToEdit == null ? 'Додати Студента' : 'Редагувати Студента',
+                  widget.studentToEdit == null
+                      ? 'Додати Студента'
+                      : 'Редагувати Студента',
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
@@ -117,12 +120,21 @@ class _NewStudentFormState extends State<NewStudentForm> {
                     labelStyle: TextStyle(color: Colors.blue.shade700),
                     border: const OutlineInputBorder(),
                   ),
-                  items: Department.values.map((department) {
+                  items: departmentList.map((department) {
                     return DropdownMenuItem(
                       value: department,
-                      child: Text(
-                        department.name,
-                        style: const TextStyle(fontSize: 16),
+                      child: Row(
+                        children: [
+                          Icon(
+                            department.icon,
+                            color: department.color,
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            department.name,
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                        ],
                       ),
                     );
                   }).toList(),
@@ -169,7 +181,10 @@ class _NewStudentFormState extends State<NewStudentForm> {
                   onPressed: _saveStudent,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blueAccent.shade200,
-                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 40),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 14,
+                      horizontal: 40,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
                     ),
