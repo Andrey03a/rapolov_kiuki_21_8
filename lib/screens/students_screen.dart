@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/student.dart';
 import '../providers/students_provider.dart';
 import '../widgets/student_card.dart';
 import '../widgets/new_student_form.dart';
@@ -10,32 +9,40 @@ class StudentsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final students = ref.watch(studentsProvider);
+    final state = ref.watch(studentsProvider);
 
-    void openStudentForm({StudentProfile? student, int? index}) {
+    if (state.inProcess) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    void openStudentForm({int? index}) {
       showModalBottomSheet(
         context: context,
         isScrollControlled: true,
-        builder: (_) => NewStudentForm(
-          studentToEdit: student,
-          onSave: (updatedStudent) {
-            final notifier = ref.read(studentsProvider.notifier);
-            if (index != null) {
-              notifier.updateStudent(index, updatedStudent);
-            } else {
-              notifier.addStudent(updatedStudent);
-            }
-          },
-        ),
+        builder: (_) => NewStudentForm(studentIndex: index,),
       );
     }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (state.exception != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              state.exception!,
+              style: const TextStyle(color: Colors.white),
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    });
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Студенти'),
         backgroundColor: Colors.pinkAccent.shade100,
       ),
-      body: students.isEmpty
+      body: state.universityList.isEmpty
           ? const Center(
               child: Text(
                 'Список порожній',
@@ -43,9 +50,9 @@ class StudentsScreen extends ConsumerWidget {
               ),
             )
           : ListView.builder(
-              itemCount: students.length,
+              itemCount: state.universityList.length,
               itemBuilder: (context, index) {
-                final student = students[index];
+                final student = state.universityList[index];
                 return Dismissible(
                   key: ValueKey(student.id),
                   direction: DismissDirection.endToStart,
@@ -78,14 +85,18 @@ class StudentsScreen extends ConsumerWidget {
                           onPressed: () {
                             container
                                 .read(studentsProvider.notifier)
-                                .undoRemove(student, index);
+                                .undoRemove();
                           },
                         ),
                       ),
-                    );
+                    ).closed.then((value) {
+                      if (value != SnackBarClosedReason.action) {
+                        ref.read(studentsProvider.notifier).eraseFromDb();
+                      }
+                    });
                   },
                   child: GestureDetector(
-                    onTap: () => openStudentForm(student: student, index: index),
+                    onTap: () => openStudentForm(index: index),
                     child: StudentCard(profile: student),
                   ),
                 );

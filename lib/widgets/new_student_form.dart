@@ -1,58 +1,61 @@
 import 'package:flutter/material.dart';
 import '../models/student.dart';
 import '../models/department.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/students_provider.dart';
 
-class NewStudentForm extends StatefulWidget {
-  final Function(StudentProfile) onSave;
-  final StudentProfile? studentToEdit;
-
+class NewStudentForm extends ConsumerStatefulWidget {
   const NewStudentForm({
     super.key,
-    required this.onSave,
-    this.studentToEdit,
+    this.studentIndex
   });
 
-  @override
-  State<NewStudentForm> createState() => _NewStudentFormState();
-}
+  final int? studentIndex;
 
-class _NewStudentFormState extends State<NewStudentForm> {
+  @override
+  ConsumerState<ConsumerStatefulWidget> createState() => _NewStudentFormState();
+}
+class _NewStudentFormState extends ConsumerState<NewStudentForm> {
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
-  Department? _selectedDepartment;
-  Gender? _selectedGender;
+  Department? _selectedSpecialization;
+  Gender? _selectedIdentity;
   int _marks = 50;
 
   @override
   void initState() {
     super.initState();
-    if (widget.studentToEdit != null) {
-      _firstNameController.text = widget.studentToEdit!.firstName;
-      _lastNameController.text = widget.studentToEdit!.lastName;
-      _selectedDepartment = widget.studentToEdit!.specialization;
-      _selectedGender = widget.studentToEdit!.identity;
-      _marks = widget.studentToEdit!.marks;
+    if (widget.studentIndex != null) {
+      final student = ref.read(studentsProvider).universityList[widget.studentIndex!];
+      _firstNameController.text = student.firstName;
+      _lastNameController.text = student.lastName;
+      _selectedIdentity = student.identity;
+      _selectedSpecialization = student.specialization;
+      _marks = student.marks;
     }
   }
 
-  void _saveStudent() {
-    if (_firstNameController.text.isEmpty ||
-        _lastNameController.text.isEmpty ||
-        _selectedDepartment == null ||
-        _selectedGender == null) {
-      return;
+  void _saveStudent() async {
+    if (widget.studentIndex == null)  {
+      await ref.read(studentsProvider.notifier).addStudent(
+            _firstNameController.text.trim(),
+            _lastNameController.text.trim(),
+            _selectedSpecialization,
+            _selectedIdentity,
+            _marks,
+          );
+    } else {
+      await ref.read(studentsProvider.notifier).editStudent(
+            widget.studentIndex!,
+            _firstNameController.text.trim(),
+            _lastNameController.text.trim(),
+            _selectedSpecialization,
+            _selectedIdentity,
+            _marks,
+          );
     }
 
-    final newStudent = StudentProfile(
-      id: widget.studentToEdit?.id ?? DateTime.now().toString(),
-      firstName: _firstNameController.text.trim(),
-      lastName: _lastNameController.text.trim(),
-      specialization: _selectedDepartment!,
-      marks: _marks,
-      identity: _selectedGender!,
-    );
-
-    widget.onSave(newStudent);
+    if (!context.mounted) return;
     Navigator.of(context).pop();
   }
 
@@ -79,7 +82,7 @@ class _NewStudentFormState extends State<NewStudentForm> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  widget.studentToEdit == null
+                  widget.studentIndex == null
                       ? 'Додати Студента'
                       : 'Редагувати Студента',
                   style: TextStyle(
@@ -114,7 +117,7 @@ class _NewStudentFormState extends State<NewStudentForm> {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<Department>(
-                  value: _selectedDepartment,
+                  value: _selectedSpecialization,
                   decoration: InputDecoration(
                     labelText: 'Факультет',
                     labelStyle: TextStyle(color: Colors.blue.shade700),
@@ -139,12 +142,12 @@ class _NewStudentFormState extends State<NewStudentForm> {
                     );
                   }).toList(),
                   onChanged: (value) {
-                    setState(() => _selectedDepartment = value);
+                    setState(() => _selectedSpecialization = value);
                   },
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<Gender>(
-                  value: _selectedGender,
+                  value: _selectedIdentity,
                   decoration: InputDecoration(
                     labelText: 'Стать',
                     labelStyle: TextStyle(color: Colors.pink.shade700),
@@ -160,7 +163,7 @@ class _NewStudentFormState extends State<NewStudentForm> {
                     );
                   }).toList(),
                   onChanged: (value) {
-                    setState(() => _selectedGender = value);
+                    setState(() => _selectedIdentity = value);
                   },
                 ),
                 const SizedBox(height: 16),
